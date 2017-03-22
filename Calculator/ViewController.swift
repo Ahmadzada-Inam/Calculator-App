@@ -14,6 +14,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var display: UILabel!
     var userIsInTheMiddleOfTyping = false
     private var brain = CalculatorBrain()
+    private var variableValues = [String:Double]()
     
     @IBAction func touchDigit(_ sender: UIButton) {
         
@@ -38,6 +39,18 @@ class ViewController: UIViewController {
             display.text = String(newValue)
         }
     }
+    
+    var displayResult: (result: Double?, isPending: Bool, description: String) = (nil, false, " "){
+        didSet {
+            if let result = displayResult.result{
+                displayValue = result
+            } else if displayResult.description == "?"{
+                displayValue = 0.0
+            }
+            descriptionDisplay.text = displayResult.description + (displayResult.isPending ? " …" : " =")
+        }
+    }
+    
     @IBAction func clear(_ sender: UIButton) {
         displayValue = 0
         userIsInTheMiddleOfTyping = false
@@ -50,15 +63,38 @@ class ViewController: UIViewController {
             brain.setOperand(displayValue)
             userIsInTheMiddleOfTyping = false
         }
-        if !userIsInTheMiddleOfTyping && displayValue != 0{
-            if let mathematicalSymbol = sender.currentTitle {
-                brain.performOperation(mathematicalSymbol)
-                descriptionDisplay.text = brain.descriptionResult()
+        
+        if let mathematicalSymbol = sender.currentTitle {
+            brain.performOperation(mathematicalSymbol)
+        }
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    @IBAction func pushM(_ sender: UIButton) {
+        brain.setOperand(variable: sender.currentTitle!)
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    @IBAction func setM(_ sender: UIButton) {
+        userIsInTheMiddleOfTyping = false
+        let symbol = String((sender.currentTitle!).characters.dropFirst())
+        variableValues[symbol] = displayValue
+        displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    @IBAction func backspace(_ sender: UIButton) {
+        if userIsInTheMiddleOfTyping {
+            guard !display.text!.isEmpty else {return}
+            display.text = String(display.text!.characters.dropLast())
+            if display.text!.isEmpty {
+                displayValue = 0.0
+                userIsInTheMiddleOfTyping = false
+                displayResult = brain.evaluate(using: variableValues)
             }
         }
-        
-        if let result = brain.result {
-            displayValue = result
+        else{
+            brain.undo()
+            displayResult = brain.evaluate(using: variableValues)
         }
     }
 }
