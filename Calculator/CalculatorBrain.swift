@@ -32,9 +32,16 @@ struct CalculatorBrain {
         "e": Operation.constant(M_E),
         "√": Operation.unaryOperation(sqrt, nil),
         "±": Operation.unaryOperation({-$0}, nil),
-        "х²": Operation.unaryOperation({$0 * $0}, {"("+$0+")²"}),
+        "х²": Operation.unaryOperation({$0 * $0}, { "(" + $0 + ")²"}),
+        "х⁻¹": Operation.unaryOperation({1.0 / $0}, { "(" + $0 + ")⁻¹"}),
         "cos": Operation.unaryOperation(cos, nil),
         "sin": Operation.unaryOperation(sin, nil),
+        "tan": Operation.unaryOperation(tan, nil),
+        "cos⁻¹": Operation.unaryOperation(acos, nil),
+        "sin⁻¹": Operation.unaryOperation(asin, nil),
+        "tan⁻¹": Operation.unaryOperation(atan, nil),
+        "log": Operation.unaryOperation(log10, nil),
+        "ln": Operation.unaryOperation(log, nil),
         "﹢": Operation.binaryOperation({$0+$1}, nil),
         "﹣": Operation.binaryOperation({$0-$1}, nil),
         "×": Operation.binaryOperation({$0*$1}, nil),
@@ -57,7 +64,7 @@ struct CalculatorBrain {
     func evaluate(using variables: Dictionary<String, Double>? = nil) -> (result: Double?, isPending: Bool, description: String){
         
         var accumulator: Double?
-        var descriptionAccumulator: String = ""
+        var descriptionAccumulator: String = " "
         var pendingBinaryOperation: PendingBinaryOperation?
         
         var description: String{
@@ -90,7 +97,7 @@ struct CalculatorBrain {
         }
         
         func setOperand(variable named: String){
-            accumulator = variables?[named] ?? 0.0
+            accumulator = variables?[named] ?? 0
             descriptionAccumulator = named
         }
         
@@ -104,16 +111,15 @@ struct CalculatorBrain {
                     if accumulator != nil{
                         accumulator = function(accumulator!)
                         if descriptionFunction == nil{
-                            descriptionFunction = {symbol + "(" + $0 + ")"
-                        }
-                        descriptionAccumulator = descriptionFunction!(descriptionAccumulator)
+                            descriptionFunction = {symbol + "(" + $0 + ")"}
                     }
+                        descriptionAccumulator = descriptionFunction!(descriptionAccumulator)
                 }
                 case .binaryOperation(let function, var descriptionFunction):
+                    performPendingBinaryOperation()
                     if accumulator != nil{
                         if(descriptionFunction == nil){
-                            descriptionFunction = {$0 + symbol + $1}
-                        }
+                            descriptionFunction = {$0 + symbol + $1}}
                         pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: accumulator!,
                                                                         descriptionFunction: descriptionFunction!, descriptionOperand: descriptionAccumulator)
                         accumulator = nil

@@ -8,8 +8,14 @@
 
 import UIKit
 
-class ViewController: UIViewController {
-
+class CalculatorViewController: UIViewController {
+    
+    @IBOutlet weak var graphBtn: UIButton!{
+        didSet{
+            graphBtn.isEnabled = false
+        }
+    }
+    
     @IBOutlet weak var descriptionDisplay: UILabel!
     @IBOutlet weak var display: UILabel!
     var userIsInTheMiddleOfTyping = false
@@ -48,12 +54,14 @@ class ViewController: UIViewController {
                 displayValue = 0.0
             }
             descriptionDisplay.text = displayResult.description + (displayResult.isPending ? " …" : " =")
+            graphBtn.isEnabled = !displayResult.isPending
         }
     }
     
     @IBAction func clear(_ sender: UIButton) {
         displayValue = 0
         userIsInTheMiddleOfTyping = false
+        variableValues = [:]
         brain.clear()
         descriptionDisplay.text = " "
     }
@@ -80,6 +88,30 @@ class ViewController: UIViewController {
         let symbol = String((sender.currentTitle!).characters.dropFirst())
         variableValues[symbol] = displayValue
         displayResult = brain.evaluate(using: variableValues)
+    }
+    
+    override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
+        return !displayResult.isPending
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        var destination = segue.destination
+        if let navigationViewController = destination as? UINavigationController{
+            destination = navigationViewController.visibleViewController ?? destination
+        }
+        if let graphViewController = destination as? GraphViewController,
+            segue.identifier == "graphVC"{
+            prepareGraphVC(graphViewController)
+        }
+    }
+    
+    func prepareGraphVC(_ graphVC: GraphViewController){
+        graphVC.navigationItem.title = displayResult.description
+        graphVC.yForX = { [weak weakSelf = self ] x in
+            weakSelf?.variableValues["M"] = x
+            return weakSelf?.brain.evaluate(using: weakSelf?.variableValues).result
+            //return weakSelf?.displayResult.result
+        }
     }
     
     @IBAction func backspace(_ sender: UIButton) {
