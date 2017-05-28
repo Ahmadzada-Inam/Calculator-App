@@ -1,4 +1,4 @@
-# Calculator-App
+# Graphing-Calculator
 
 Graphing calculator can graph given function on the detail view controller of split view controller.
 
